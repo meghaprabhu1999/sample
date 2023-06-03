@@ -1,0 +1,285 @@
+-----------------------------------------------------------nodejs jenkins-------------------------------------------------------
+
+
+dashboard ---> new Item ---> give project name - select freestyleproject ---> ok
+
+In  Source Code Management ---> select git -- give git url 
+
+In Build steps ---> select Execute shell and write the following commands
+sudo apt-get install nodejs npm -y
+sudo npm install
+sudo npm install -g pm2
+pm2 start app.js
+Apply and save
+
+In terminal   ----- enter the following commands
+
+msis@bda:~$ sudo visudo
+[sudo] password for msis: 
+visudo: /etc/sudoers.tmp unchanged
+msis@bda:~$ sudo visudo  -----> add the following code at the end and save "jenkins ALL=(ALL) NOPASSWD: ALL"  
+msis@bda:~$ service jenkins start
+root@bda:~# systemctl status jenkins
+
+go to jenkins and build
+
+
+http://localhost:3000/   ----> output is here
+
+
+-----------------------------------------Docker using jenkins-------------------------------------------------------------------------------------
+
+
+dashboard  ---> new item ---> give name --- select free style project ---> ok
+
+add git url --> https://github.com/Munshira-Noor-B/nodejsdockerdemo.git
+
+check Branches to build   ---- main/master
+
+in build steps --- select "docker build and publish"
+Repository Name -> munsh/dockimage
+Tag -> v1
+Registry credentials -> select your docker account
+
+in build steps --- select "Execute shell"
+add following commands:
+sudo docker build -t dockimage:v1 .
+sudo docker run -itd --name cont1 -p 3010:8080 dockimage:v1
+sudo docker tag dockimage:v1 munsh/dockimage
+sudo docker push munsh/dockimage
+
+apply and save
+
+In terminal:
+msis@bda:~$ docker --version   ----> check if docker is there
+msis@bda:~$ sudo usermod -aG docker jenkins
+msis@bda:~$ sudo usermod -aG root jenkins
+msis@bda:~$ sudo chmod 664 /var/run/docker.sock
+msis@bda:~$ sudo chmod 777 /var/run/docker.sock
+msis@bda:~$ systemctl start docker
+
+msis@bda:~$ sudo visudo  ----> add the following code at the end and save "jenkins ALL=(ALL) NOPASSWD: ALL"  
+msis@bda:~$ sudo service jenkins restart
+msis@bda:~$ docker login
+
+go to jenkins and build now
+
+http://localhost:3020/    ----> output is here
+
+---------------------------docker image can be created using terminal as well--------------------------------
+
+docker account ---> munsh/m.....12...
+
+sudo docker build -t dockimage2:v1 .
+msis@bda:~/docker$ sudo docker run -itd --name cont3 -p 3012:8080 dockimage2:v1
+msis@bda:~/docker$ sudo docker tag dockimage2:v1 munsh/dockimage2
+msis@bda: ~/docker$ sudo docker login
+msis@bda:~/docker$ sudo docker push munsh/dockimage2
+
+http://localhost:3012/  ----> output is here
+
+
+
+-------------------------Ansible playbook -------------------------
+
+Ansible installed in one system -- ssh to a system( control machine) 
+
+sudo git clone https://github.com/sreepathysois/AnsibleWorkUpdated.git
+
+cd AnsibleWorkUpdated/ansible-apache
+
+ls
+vi hosts
+vi apache.yml   -> as soon as 
+sudo ssh-keygen -t rsa  ----> to create a public key
+sudo ssh-copy-id -i msis.pub msis@172.16.51.28 ---->copy public key to nodes
+sudo apt-get install sshpass    ---> install sshpass
+sudo apt-get install ansible
+
+
+sudo ansible-playbook apache.yml -i hosts -c ssh --ask-pass ---> run/push a playbook  -i-->inventory  -c--> connect  --ask-pass---> to ask for password
+sudo ansible-playbook apache.yml -i hosts -c ssh -K   ---> -K---> provide a sudo user password
+
+------another one
+cd AnsibleWorkUpdate/lampansible
+vi lamp_app.yml
+sudo ansible-playbook lamp_app.yml -i hosts -c ssh --ask-pass
+sudo ansible-playbook lamp_app.yml -i hosts -c ssh -K
+
+
+check it in your ip and slave ip
+
+[apache]
+172.16.51.69  ansible_ssh_user=msis
+
+
+--------------------------------------------------kubernetes------------------------------------
+
+ssh msis@172.16.51.124
+
+kubectl get pods
+
+kubectl get nodes
+
+cd basic-php-website/
+
+ls
+
+sudo nano hosts bookalbum_deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: munsh
+  labels:
+    app: munsh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: munsh
+  template:
+    metadata:
+      labels:
+        app: munsh
+    spec:
+      containers:
+      - name: munsh
+        image: munsh/docimg3:latest
+        ports:
+        - containerPort: 80
+
+
+sudo nano hosts bookalbum_service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: munsh
+  name: munsh
+spec:
+  type: NodePort
+  ports:
+    - port: 90
+      targetPort: 90
+      protocol: TCP
+  selector:
+    app: munsh
+
+
+kubectl create -f bookalbum_deployment.yaml
+kubectl apply -f bookalbum_deployment.yaml 
+kubectl get pods
+
+kubectl describe pods/munsh-85bff5568b-mmjht
+
+kubectl create -f bookalbum_service.yaml
+kubectl apply -f bookalbum_service.yaml
+kubectl get svc
+
+
+
+-----------------------------------------------------maven-tomcat------------------------------------------------
+
+create a freeStyleProject -- Java_Maven_JSP_Build
+add git repo -- https://github.com/sreepathysois/MyMavenApp.git
+build steps --  Invoke top-level Maven targets  --- mymaven, goals - clean compile
+Post-build Actions   --  Build other projects --> Java_Maven_JSP_Package 
+appy and save
+
+create a freeStyleProject -- Java_Maven_JSP_Package
+add git repo -- https://github.com/sreepathysois/MyMavenApp.git
+build steps --  Invoke top-level Maven targets  --- mymaven, goals - package
+Post-build Actions   --  Build other projects --> Java_Maven_JSP_Deploy 
+appy and save
+
+
+create a freeStyleProject -- Java_Maven_JSP_Deploy
+add git repo -- https://github.com/sreepathysois/MyMavenApp.git
+Post-build Actions   --   Deploy war/ear to a container --> **/*.war --> MyMavenApp
+                     --   containers --  select --Tomcat 9.x Remote 
+                     -- credentials -- give creds as given in ( sudo nano /etc/tomcat9/tomcat-users.xml)
+                     -- tomcat url -- http://172.16.51.67:8080  --> slave ip
+appy and save
+
+
+
+------------------------------------------------------------------------------------------------------------------------------
+- hosts: apache
+  #sudo: yes
+  become: true
+  vars:
+    created_username: msis
+  tasks:
+    - name: install apache2
+      apt: name=apache2 update_cache=yes state=latest
+
+---------------------------------------------------------------------------------------------------------------------------
+
+FROM node:14
+
+# Create app directory
+WORKDIR /usr/src/app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
+
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+# Bundle app source
+COPY . .
+
+EXPOSE 8080
+CMD [ "node", "server.js" ]
+
+
+------------------------------------------------------------------------------------------------------------------
+manage jenkins->systeem->config->plugins-> maven, docker build and publish, deploey to container
+
+manage jenkins->tools-> last maven add mymaven
+
+------------------------------------------------------------------------------------------------------------------------
+
+hosts: lampserver 
+  tasks:
+    - name: install lamp stack
+      become: yes
+      become_user: root   
+      apt:
+        pkg:
+          - apache2
+          - mysql-server
+          - php7.2 
+          - php7.2-mysql
+        state: present
+        update_cache: yes
+
+    - name: start apache service
+      become: yes
+      become_user: root    
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: start mysql service
+      become: yes
+      become_user: root   
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: create target directory
+      file: path=/var/www/html state=directory mode=0755
+
+    - name: deploy index.html
+      become: yes
+      become_user: root    
+      copy:
+        src: /home/ansible/lampansible/index.html
+        dest: /var/www/html/index.html
+
