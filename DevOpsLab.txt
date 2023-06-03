@@ -24,6 +24,7 @@ root@bda:~# systemctl status jenkins
 go to jenkins and build
 
 
+
 http://localhost:3000/   ----> output is here
 
 
@@ -313,3 +314,6 @@ sudo git push origin main
 
 setting-> developer setting-> personal access token->token
 sudo git merge-> merge two branhces
+-----------------------------------------------------------
+
+sudo scp msis@172.16.51.69:/home/msis/Downloads/agent.jar /home/msis/Download
