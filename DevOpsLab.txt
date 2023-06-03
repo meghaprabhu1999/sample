@@ -283,3 +283,33 @@ hosts: lampserver
         src: /home/ansible/lampansible/index.html
         dest: /var/www/html/index.html
 
+------------------------------------------------------
+
+sudo git init - create git folder
+
+sudo git remote add origin url -- gets git repo
+
+sudo git pull origin main 
+
+sudo git branch -- tells the branch you are in
+
+sudo git branch main - create new branch
+
+sudo git branch .
+
+add a new file
+
+sudo git status - track file
+
+sudo git add index.html 
+
+sudo git add . to track all files
+
+sudo git commit -m "anything"
+
+sudo git log 
+
+sudo git push origin main
+
+setting-> developer setting-> personal access token->token
+sudo git merge-> merge two branhces
